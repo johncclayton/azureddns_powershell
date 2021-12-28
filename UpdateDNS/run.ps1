@@ -40,14 +40,14 @@ If ($name -and $zone -and $reqIP) {
         Write-Host "IP Address $reqIP passed - updating DNS record accordingly"
         $CurrentRec.Records[0].Ipv4Address = $reqIP
         Set-AzDnsRecordSet -RecordSet $CurrentRec
-        $body = "Updated DNS record with requested IP $reqIP"
+        $body = "good $reqIP"
         $status = [HttpStatusCode]::OK
         Write-Host $body
     } else {
         Write-Host "No current A record for $name in zone $zone, adding now."
         New-AzDnsRecordSet -Name $name -RecordType A -ZoneName $zone -ResourceGroupName $rg -Ttl 3600 -DnsRecords (New-AzDnsRecordConfig -Ipv4Address $reqIP)
         $status = [HttpStatusCode]::OK
-        $body = "DNS Record created with requested IP $reqIP"
+        $body = "good $reqIP"
         Write-Host $body
     }      
 } else {
