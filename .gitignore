@@ -3,7 +3,6 @@
 bin
 obj
 appsettings.json
-local.settings.json
 build/f**
 
 # Azurite artifacts
