@@ -4,6 +4,7 @@ bin
 obj
 appsettings.json
 local.settings.json
+build/f**
 
 # Azurite artifacts
 __blobstorage__
@@ -11,3 +12,6 @@ __queuestorage__
 __azurite_db*__.json
 .vscode/**
 .vs/**
+.terraform.lock.hcl
+terraform**
+.terraform.tfstate.lock.info

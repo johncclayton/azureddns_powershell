@@ -1,20 +1,20 @@
 variable "prefix" {
-    type = "string"
-    default = "twphoto"
+    type = string
+    default = "azzy"
 }
 
 variable "location" {
-    type = "string"
+    type = string
     default = "switzerlandnorth"
 }
 
 variable "environment" {
-    type = "string"
+    type = string
     default = "dev"
 }
 
 variable "functionapp" {
-    type = "string"
+    type = string
     default = "./build/functionapp.zip"
 }
 

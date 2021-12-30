@@ -12,7 +12,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "AzDNS"
+  name     = "${var.prefix}"
   location = "${var.location}"
 }
 
@@ -34,14 +34,14 @@ resource "azurerm_storage_blob" "appcode" {
     name = "functionapp.zip"
     storage_account_name = "${azurerm_storage_account.storage.name}"
     storage_container_name = "${azurerm_storage_container.deployments.name}"
-    type = "block"
+    type = "Block"
     source = "${var.functionapp}"
 }
 
 data "azurerm_storage_account_sas" "sas" {
     connection_string = "${azurerm_storage_account.storage.primary_connection_string}"
     https_only = true
-    start = "2021-12-31"
+    start = "2021-11-30"
     expiry = "2022-12-31"
     resource_types {
         object = true
@@ -66,6 +66,13 @@ data "azurerm_storage_account_sas" "sas" {
     }
 }
 
+resource "azurerm_application_insights" "insights" {
+  name                = "${var.prefix}-insights"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  application_type    = "web"
+}
+
 resource "azurerm_app_service_plan" "asp" {
   name                = "${var.prefix}-plan"
   location            = "${var.location}"
@@ -87,14 +94,27 @@ resource "azurerm_function_app" "functions" {
     storage_connection_string = "${azurerm_storage_account.storage.primary_connection_string}"
     version = "~2"
 
+    identity {
+      type = "SystemAssigned"
+    }
+
     app_settings = {
         https_only = true
         FUNCTIONS_WORKER_RUNTIME = "powershell"
         FUNCTIONS_EXTENSION_VERSION = "~4"
         FUNCTION_APP_EDIT_MODE = "readonly"
-        APPINSIGHTS_INSTRUMENTATION_KEY = "nothing"
+        APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.insights.instrumentation_key}"
+        AzureWebJobsStorage = "${azurerm_storage_account.storage.primary_connection_string}"
         HASH = "${base64encode(filesha256("${var.functionapp}"))}"
-        WEBSITE_CONTENTAZUREFILECONNECTIONSTRING = "DefaultEndpointsProtocol=https;AccountName=adns;AccountKey=<accountkeyfromportal>==;EndpointSuffix=core.windows.net"
         WEBSITE_RUN_FROM_PACKAGE = "https://${azurerm_storage_account.storage.name}.blob.core.windows.net/${azurerm_storage_container.deployments.name}/${azurerm_storage_blob.appcode.name}${data.azurerm_storage_account_sas.sas.sas}"
     }
+}
+
+data "azurerm_subscription" "primary" {
+}
+
+resource "azurerm_role_assignment" "roledns" {
+  scope                = data.azurerm_subscription.primary.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azurerm_function_app.functions.identity.0.principal_id
 }
