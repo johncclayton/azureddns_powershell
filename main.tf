@@ -12,7 +12,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}"
+  name     = title("${var.prefix}")
   location = "${var.location}"
 }
 
@@ -81,7 +81,7 @@ resource "azurerm_app_service_plan" "asp" {
   kind = "FunctionApp"
 
   sku {
-    tier = "FunctionApp"
+    tier = "Dynamic"
     size = "Y1"
   }
 }
@@ -92,7 +92,7 @@ resource "azurerm_function_app" "functions" {
     resource_group_name = "${azurerm_resource_group.rg.name}"
     app_service_plan_id = "${azurerm_app_service_plan.asp.id}"
     storage_connection_string = "${azurerm_storage_account.storage.primary_connection_string}"
-    version = "~2"
+    version = "~3"
 
     identity {
       type = "SystemAssigned"
@@ -101,7 +101,7 @@ resource "azurerm_function_app" "functions" {
     app_settings = {
         https_only = true
         FUNCTIONS_WORKER_RUNTIME = "powershell"
-        FUNCTIONS_EXTENSION_VERSION = "~4"
+        FUNCTIONS_EXTENSION_VERSION = "~3"
         FUNCTION_APP_EDIT_MODE = "readonly"
         APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.insights.instrumentation_key}"
         AzureWebJobsStorage = "${azurerm_storage_account.storage.primary_connection_string}"
@@ -118,3 +118,14 @@ resource "azurerm_role_assignment" "roledns" {
   role_definition_name = "DNS Zone Contributor"
   principal_id         = azurerm_function_app.functions.identity.0.principal_id
 }
+
+# data "azurerm_function_app_host_keys" "keys" {
+#   name                = azurerm_function_app.functions.name
+#   resource_group_name = azurerm_resource_group.rg.name
+# }
+
+# output "function_url" {
+#   value = "${azurerm_function_app.functions.default_hostname}/api/UpdateDNS?code=${data.azurerm_function_app_host_keys.keys.default_function_key}"
+#   sensitive = true
+# }
+
